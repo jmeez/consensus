@@ -12,6 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Anthropic from '@anthropic-ai/sdk';
+import { getSI } from './si.mjs';
 
 const PORT = Number(process.env.PORT || 8787);
 const MODEL = process.env.NOVA_MODEL || 'claude-opus-5';
@@ -108,6 +109,14 @@ function serveStatic(req, res) {
 
 http.createServer(async (req, res) => {
   if (req.url?.startsWith('/api/nova') && req.method === 'POST') return handleNova(req, res);
+  if (req.url?.startsWith('/api/si')) {
+    try {
+      return json(res, 200, await getSI({ forceRefresh: req.url.includes('refresh=1') }));
+    } catch (err) {
+      console.error(err);
+      return json(res, 200, { live: false, errors: [String(err.message || err)] });
+    }
+  }
   if (req.url?.startsWith('/api/health')) {
     return json(res, 200, { ok: true, model: MODEL, live: HAS_KEY });
   }

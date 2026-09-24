@@ -17,9 +17,22 @@ screen, eleven reusable desk skills (idea generation, client inquiry, morning
 email…), a screener, charting, and a team chat workspace where Nova participates
 in rooms.
 
-> **Status: prototype.** All market data is deterministic mock data (as of
-> Aug 22, 2026). No live feeds, no real accounts. See `CLAUDE.md` for the full
-> project state and roadmap.
+> **Status: prototype.** Prices/OHLC are deterministic mock data (as of
+> Aug 22, 2026); short interest can be **real** (see below). No real accounts.
+> See `CLAUDE.md` for the full project state and roadmap.
+
+## Real short interest data
+
+`server/si.mjs` pulls free public data — FINRA's bi-weekly equity short
+interest (SI shares, ADV, days-to-cover, settlement date) and SEC EDGAR shares
+outstanding — and serves it at `/api/si` (cached 12h). The app overlays it onto
+the universe automatically and labels vintages: reported figures carry their
+FINRA/EDGAR as-of dates, while the convert-delta / passive / insider legs stay
+estimates marked "(est.)" until 13F/N-PORT parsing lands. No keys required;
+EDGAR just needs the contact User-Agent already set in the module. If the
+sources are unreachable, `/api/si` reports `live:false` and the app stays on
+clearly-labeled mock data. Refresh manually with `node server/si.mjs`; test the
+parsers with `node --test server/si.test.mjs`.
 
 ## Running it
 
