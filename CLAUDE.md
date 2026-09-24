@@ -36,10 +36,15 @@ backend database. Everything runs on deterministic mock data (seeded RNG,
 index.html            Vite entry (dark bg, mark favicon)
 src/main.jsx          Hash router: "/" → Site (marketing), "#/app" → App (platform)
 src/Site.jsx          Marketing site (from prototype/nova-site.jsx)
-src/App.jsx           The platform (from prototype/nova-chat.jsx), ~2700 lines, single file
+src/App.jsx           The platform views (~2560 lines; data layer split out 2026-09-24)
+src/data/universe.js  Data layer: mock universe, genOHLC, sma/rsi, factors, STATE/SOURCES,
+                      and applyLiveSI() which overlays real FINRA/EDGAR SI onto the universe
 src/lib/nova.js       Model client: POST /api/nova; falls back to offline mock if no key/server
 src/lib/storage.js    Guarded localStorage helpers (prefix "nova.")
-server/index.mjs      Node API proxy (@anthropic-ai/sdk) + prod static server for dist/
+server/index.mjs      Node API proxy (@anthropic-ai/sdk) + /api/si + prod static server
+server/si.mjs         Real SI pipeline: FINRA equityShortInterest + EDGAR shares outstanding
+                      → cached (server/cache/, gitignored, TTL 12h). CLI: node server/si.mjs
+server/si.test.mjs    Parser unit tests (node --test server/si.test.mjs)
 public/brand/*.png    Logo lockup + mark (extracted from the base64 in the prototypes)
 prototype/            Original uploaded artifact files, untouched — provenance only
 ```
@@ -73,6 +78,26 @@ Nova blocks, decision capture regex, AI-memory panel, search, $/@// composer)
 - The proxy clamps max_tokens (≤4096), truncates history (last 24 msgs, 20k
   chars each), and only passes role/content through.
 
+## Real SI pipeline (added 2026-09-24)
+
+- Sources (free, no API keys): FINRA Query API `otcMarket/equityShortInterest`
+  (bi-weekly SI shares, ADV, DTC, settlement date; unauthenticated, rate-limited)
+  and SEC EDGAR XBRL `dei:EntityCommonStockSharesOutstanding` (float denominator;
+  needs a contact User-Agent, throttled 120ms/req).
+- What's REAL once fetched: raw SI shares, SI % of shares out, ADV, DTC, as-of
+  dates. Convert-delta / passive / insider legs remain ESTIMATES: applyLiveSI
+  carries them over as fractions of the mock float/SI, and the UI appends
+  "(est.)" to those rows plus a vintage line ("Reported: FINRA <date> settle ·
+  shares out <date> (EDGAR) · adjustments estimated"). Prices stay mock.
+- Honesty rule: on fetch failure /api/si returns live:false (stale cache is
+  served marked `stale:true`) and the app stays on labeled mock. Never serve
+  fixtures as live.
+- **Blocker in this cloud environment**: the network policy denies www.sec.gov,
+  data.sec.gov, api.finra.org (proxy CONNECT 403). Fix: session title bar →
+  cloud environment menu → Edit → Network access → allow those domains. Locally
+  it just works. Live fetch is UNVERIFIED until then; parsers are unit-tested
+  and the UI live path was verified against a stubbed /api/si.
+
 ## Retention/persistence (decided this session)
 
 localStorage keys (all under `nova.`): `user`, `prefs` (onboarding answers),
@@ -99,16 +124,23 @@ and writes are try/catch-guarded.
 
 Near-term candidates, roughly in order of value:
 1. **Live prices** — swap genOHLC for a free equities API (e.g. Polygon/Tiingo)
-   behind the same server proxy; keep mock as fallback.
-2. **Real SI inputs** — FINRA short interest files + 13F/N-PORT parsing to
-   compute fundamental SI for real, replacing the hand-set SEC constants.
+   behind the same server proxy; keep mock as fallback. Needs a vendor key.
+2. **Real SI inputs** — ✅ DONE 2026-09-24 (FINRA + EDGAR pipeline; live fetch
+   verification pending network access — see Real SI pipeline above). Remaining
+   stretch: real 13F/N-PORT passive + convert-delta legs to replace estimates.
 3. **Streaming responses** in Ask Nova (proxy → SSE) once answers get longer.
 4. **Skill runs on schedule** (Morning Email) — needs a job runner + email out.
 5. **Auth for real** — accounts are currently client-side make-believe.
-6. **Split App.jsx** into modules once churn slows (data / skills / views).
+6. **Split App.jsx** into modules — data layer ✅ DONE 2026-09-24
+   (src/data/universe.js); skills/views split still pending churn slowdown.
 
 ## Session log
 
+- **2026-09-24 (2)**: Roadmap #2 + data-layer half of #6. Split the data layer
+  into src/data/universe.js; built server/si.mjs (FINRA + EDGAR → /api/si,
+  cached, unit-tested) and applyLiveSI overlay with vintage/"(est.)" labels.
+  Build + browser smoke pass (mock path and stubbed live path). Live fetch
+  blocked by env network policy (sec.gov/finra.org) — allow domains to verify.
 - **2026-09-24**: Housekeeping — merged the outstanding memory-file commit to
   `main` so nothing lives only on a side branch; repo is fully current on the
   default branch. (Note: GitHub does not remove repos for inactivity.)
