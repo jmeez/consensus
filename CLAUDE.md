@@ -90,6 +90,10 @@ and writes are try/catch-guarded.
   "offline mock"). Keep those labels until live data exists.
 - Keep `prototype/` untouched. New work goes in `src/`.
 - Git: work on branch `claude/nova-prototype-setup-yl46zg` (repo jmeez/consensus).
+- Notion: the project's external home is the "NOVA Hub" page (under Projects +
+  Tasks HQ) with sub-pages Overview / Current Project / Reference / Decisions &
+  Notes. Keep it in sync with this file when state, decisions, or roadmap change.
+  Hub: https://app.notion.com/p/631da6cc2c4b45a79a23ae89bb18b338
 
 ## Roadmap (agreed direction: working first version soon)
 
@@ -105,6 +109,12 @@ Near-term candidates, roughly in order of value:
 
 ## Session log
 
+- **2026-09-24**: Housekeeping — merged the outstanding memory-file commit to
+  `main` so nothing lives only on a side branch; repo is fully current on the
+  default branch. (Note: GitHub does not remove repos for inactivity.)
+- **2026-09-21**: Populated the Notion "NOVA Hub" (Overview, Current Project,
+  Reference, Decisions & Notes) from this file and the session history; linked
+  it under Conventions. No code changes; repo unchanged since PR #1 merge.
 - **2026-08-31**: Initial import. Restructured artifact prototype into Vite
   project; added server proxy + offline mock, localStorage persistence, real
   chat sessions, sign-out, site↔app routing, extracted logo PNGs; wrote docs;
