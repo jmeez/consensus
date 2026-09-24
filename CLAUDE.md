@@ -109,6 +109,9 @@ Near-term candidates, roughly in order of value:
 
 ## Session log
 
+- **2026-09-24**: Housekeeping — merged the outstanding memory-file commit to
+  `main` so nothing lives only on a side branch; repo is fully current on the
+  default branch. (Note: GitHub does not remove repos for inactivity.)
 - **2026-09-21**: Populated the Notion "NOVA Hub" (Overview, Current Project,
   Reference, Decisions & Notes) from this file and the session history; linked
   it under Conventions. No code changes; repo unchanged since PR #1 merge.
